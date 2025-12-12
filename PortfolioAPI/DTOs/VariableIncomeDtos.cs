@@ -12,6 +12,8 @@ public class CreateVariableIncomeDto
     
     public int Quantity { get; set; }
     public decimal AveragePrice { get; set; }
+
+    public int? WalletId { get; set; }
 }
 
 public class CreateTransactionDto

@@ -29,6 +29,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import PaletteIcon from '@mui/icons-material/Palette'
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
@@ -44,6 +45,7 @@ const menuItems = [
   { text: 'Análise', icon: <PieChartIcon />, path: '/analysis' },
   { text: 'Importar', icon: <FileUploadIcon />, path: '/import' },
   { text: 'IA Chat', icon: <ChatIcon />, path: '/chat' },
+  { text: 'Carteiras', icon: <AccountBalanceWalletIcon />, path: '/wallets' },
   { text: 'Design System', icon: <PaletteIcon />, path: '/design-system' },
   { text: 'Configurações', icon: <SettingsIcon />, path: '/settings' },
 ]

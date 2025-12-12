@@ -1,40 +1,50 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:15-alpine
+    container_name: teste_antigravity-db-1
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: PortfolioDB
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
 
   backend:
     build:
       context: ./PortfolioAPI
       dockerfile: Dockerfile
+    container_name: teste_antigravity-backend-1
     ports:
       - "5000:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Database=PortfolioDB;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=db;Database=PortfolioDB;Username=postgres;Password=postgrespassword
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Jwt__Key=super_secret_key_123456789_at_least_32_bytes_long
     depends_on:
       - db
+    restart: always
 
   frontend:
     build:
-      context: ./portfolio-app
+      context: portfolio-app
       dockerfile: Dockerfile
+    container_name: teste_antigravity-frontend-1
     ports:
       - "3000:3000"
     volumes:
       - ./portfolio-app:/app
       - /app/node_modules
     environment:
-      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
     depends_on:
       - backend
+    restart: always
 
 volumes:
   postgres_data:

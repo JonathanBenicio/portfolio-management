@@ -18,13 +18,17 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
 import { variableIncomeApi } from '@/lib/api'
 import { useSnackbar } from '@/lib/snackbar'
+import VariableIncomeForm from '@/components/VariableIncomeForm'
 
 export default function VariableIncomePage() {
   const [stocks, setStocks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { showError, showSuccess } = useSnackbar()
+  const [openForm, setOpenForm] = useState(false)
 
   useEffect(() => {
     fetchAssets()
@@ -36,16 +40,14 @@ export default function VariableIncomePage() {
       setStocks(response.data)
     } catch (error) {
       showError('Erro ao carregar renda variável')
-      // Fallback to mock data
-      setStocks([
-        { id: 1, ticker: 'PETR4', type: 'Ação', quantity: 100, averagePrice: 35.50, currentPrice: 38.20, gain: 7.6 },
-        { id: 2, ticker: 'VALE3', type: 'Ação', quantity: 50, averagePrice: 68.00, currentPrice: 71.50, gain: 5.1 },
-        { id: 3, ticker: 'MXRF11', type: 'FII', quantity: 200, averagePrice: 10.50, currentPrice: 11.20, gain: 6.7 },
-        { id: 4, ticker: 'ITSA4', type: 'Ação', quantity: 150, averagePrice: 9.80, currentPrice: 9.50, gain: -3.1 },
-      ])
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFormSuccess = () => {
+    setOpenForm(false)
+    fetchAssets()
   }
 
   if (loading) {
@@ -67,8 +69,8 @@ export default function VariableIncomePage() {
           <Typography variant="h4" fontWeight="bold">
             Renda Variável
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />}>
-            Registrar Transação
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenForm(true)}>
+            Novo Ativo
           </Button>
         </Box>
       </Grid>
@@ -106,7 +108,7 @@ export default function VariableIncomePage() {
       <Grid item xs={12} md={3}>
         <Paper sx={{ p: 2 }}>
           <Typography color="text.secondary" variant="body2">Dividendos (Mês)</Typography>
-          <Typography variant="h5" fontWeight="bold">R$ 845,00</Typography>
+          <Typography variant="h5" fontWeight="bold">R$ 0,00</Typography>
         </Paper>
       </Grid>
 
@@ -130,7 +132,7 @@ export default function VariableIncomePage() {
               <TableBody>
                 {stocks.map((stock) => {
                   const currentPrice = stock.currentPrice || stock.averagePrice
-                  const gain = stock.gain || ((currentPrice - stock.averagePrice) / stock.averagePrice * 100)
+                  const gain = stock.gain || (stock.averagePrice > 0 ? ((currentPrice - stock.averagePrice) / stock.averagePrice * 100) : 0)
 
                   return (
                     <TableRow key={stock.id} hover>
@@ -166,18 +168,26 @@ export default function VariableIncomePage() {
                     </TableRow>
                   )
                 })}
+                {stocks.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">Nenhum ativo encontrado.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
       </Grid>
 
-      <Grid item xs={12}>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Próximos Dividendos</Typography>
-          <Typography color="text.secondary">PETR4 - R$ 0.42/ação em 15/12</Typography>
-        </Paper>
-      </Grid>
+      <Dialog open={openForm} onClose={() => setOpenForm(false)} maxWidth="md" fullWidth>
+        <DialogContent>
+          <VariableIncomeForm
+            onSuccess={handleFormSuccess}
+            onCancel={() => setOpenForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
     </Grid>
   )
 }

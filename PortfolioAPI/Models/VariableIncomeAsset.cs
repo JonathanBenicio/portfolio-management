@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PortfolioAPI.Models;
 
@@ -17,6 +18,10 @@ public class VariableIncomeAsset
     
     public int UserId { get; set; }
     public User? User { get; set; }
+
+    public int? WalletId { get; set; }
+    [ForeignKey("WalletId")]
+    public Wallet? Wallet { get; set; }
     
     public List<Transaction> Transactions { get; set; } = new();
     public List<Dividend> Dividends { get; set; } = new();

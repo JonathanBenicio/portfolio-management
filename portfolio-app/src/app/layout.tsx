@@ -1,12 +1,18 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Providers } from '@/components/Providers'
 import './globals.css'
+
+export const viewport: Viewport = {
+  themeColor: '#009963',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
 
 export const metadata: Metadata = {
   title: 'Portfolio Management',
   description: 'Gerencie seus investimentos com inteligência',
   manifest: '/manifest.json',
-  themeColor: '#009963',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

@@ -14,6 +14,9 @@ public class PortfolioDbContext : DbContext
     public DbSet<Dividend> Dividends { get; set; }
     public DbSet<ChatConversation> ChatConversations { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
+    public DbSet<DesignSystemConfig> DesignSystemConfigs { get; set; }
+    public DbSet<Wallet> Wallets { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,5 +46,17 @@ public class PortfolioDbContext : DbContext
         modelBuilder.Entity<Dividend>()
             .Property(f => f.Amount)
             .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<FixedIncomeAsset>()
+            .Property(e => e.PurchaseDate)
+            .HasConversion(
+                v => v.ToUniversalTime(),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        modelBuilder.Entity<FixedIncomeAsset>()
+            .Property(e => e.MaturityDate)
+            .HasConversion(
+                v => v.ToUniversalTime(),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
     }
 }

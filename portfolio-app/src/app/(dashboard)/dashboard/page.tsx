@@ -125,8 +125,8 @@ export default function DashboardPage() {
             <LineChart data={evolutionData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis dataKey="month" stroke="#666" />
-              <YAxis stroke="#666" tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: any) => `R$ ${value.toLocaleString('pt-BR')}`} />
+              <YAxis stroke="#666" tickFormatter={(value: number) => `R$ ${(value / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR')}`} />
               <Line
                 type="monotone"
                 dataKey="value"

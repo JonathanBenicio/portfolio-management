@@ -96,4 +96,72 @@ export const chatApi = {
     api.post('/chat/message', data),
 }
 
+// Import API
+export const importApi = {
+  uploadFile: (formData: FormData) =>
+    api.post('/import/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  getTemplate: () => api.get('/import/template'),
+}
+
+// Design System API
+export const designSystemApi = {
+  getConfig: () => api.get('/designsystem'),
+  updateConfig: (data: any) => api.put('/designsystem', data),
+  resetToDefault: () => api.delete('/designsystem'),
+}
+
+// Wallet endpoints
+export interface AuditLog {
+    id: number
+    userId: number
+    entityType: string
+    entityId: number
+    action: string
+    changes: string
+    timestamp: string
+}
+
+export const walletApi = {
+  getAll: () => api.get<Wallet[]>('/wallet'),
+  getById: (id: number) => api.get<Wallet>(`/wallet/${id}`),
+  create: (data: any) => api.post<Wallet>('/wallet', data),
+  update: (id: number, data: any) => api.put(`/wallet/${id}`, data),
+  delete: (id: number) => api.delete(`/wallet/${id}`),
+  getAnalytics: (id: number) => api.get<WalletAnalytics>(`/wallet/${id}/analytics`),
+  getEvolution: (id: number) => api.get<WalletEvolution[]>(`/wallet/${id}/evolution`),
+  getHistory: (id: number) => api.get<AuditLog[]>(`/wallet/${id}/history`),
+}
+
+export interface Wallet {
+  id: number
+  name: string
+  broker: string
+  ownerName: string
+  color: string
+}
+
+export interface AssetSummary {
+    id: number
+    name: string
+    type: string
+    invested: number
+    current: number
+    profit: number
+}
+
+export interface WalletAnalytics {
+    totalInvested: number
+    totalCurrent: number
+    totalProfit: number
+    monthlyReturnPercentage: number
+    assets: AssetSummary[]
+}
+
+export interface WalletEvolution {
+    date: string
+    totalValue: number
+}
+
 export default api

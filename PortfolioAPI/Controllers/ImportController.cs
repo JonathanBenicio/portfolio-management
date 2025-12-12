@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using PortfolioAPI.Data;
 using PortfolioAPI.Models;
 using System.Globalization;
@@ -35,7 +36,7 @@ namespace PortfolioAPI.Controllers
             if (file.Length > 10 * 1024 * 1024) // 10MB limit
                 return BadRequest("File size exceeds 10MB limit");
 
-            var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var imported = 0;
 
             try

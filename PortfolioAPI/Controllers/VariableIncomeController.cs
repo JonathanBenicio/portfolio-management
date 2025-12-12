@@ -21,13 +21,19 @@ public class VariableIncomeController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<VariableIncomeAsset>>> GetAll()
+    public async Task<ActionResult<List<VariableIncomeAsset>>> GetAll([FromQuery] int? walletId)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        return await _context.VariableIncomeAssets
+        var query = _context.VariableIncomeAssets
             .Include(v => v.Transactions)
-            .Where(a => a.UserId == userId)
-            .ToListAsync();
+            .Where(a => a.UserId == userId);
+
+        if (walletId.HasValue)
+        {
+            query = query.Where(a => a.WalletId == walletId.Value);
+        }
+
+        return await query.ToListAsync();
     }
 
     [HttpPost]
@@ -41,11 +47,14 @@ public class VariableIncomeController : ControllerBase
             Type = request.Type,
             Quantity = request.Quantity,
             AveragePrice = request.AveragePrice,
-            UserId = userId
+            UserId = userId,
+            WalletId = request.WalletId
         };
 
         _context.VariableIncomeAssets.Add(asset);
         await _context.SaveChangesAsync();
+
+        await LogChange(userId, asset.Id, "Create", System.Text.Json.JsonSerializer.Serialize(asset));
 
         return CreatedAtAction(nameof(GetAll), new { id = asset.Id }, asset);
     }
@@ -78,12 +87,27 @@ public class VariableIncomeController : ControllerBase
         else if (request.Type == "SELL")
         {
             asset.Quantity -= request.Quantity;
-            // Average price doesn't change on sell
         }
 
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
         return Ok(transaction);
+    }
+    
+    // Average price doesn't change on sell
+    private async Task LogChange(int userId, int entityId, string action, string changes)
+    {
+        var log = new AuditLog
+        {
+            UserId = userId,
+            EntityType = "VariableIncome",
+            EntityId = entityId,
+            Action = action,
+            Changes = changes,
+            Timestamp = DateTime.UtcNow
+        };
+        _context.AuditLogs.Add(log);
+        await _context.SaveChangesAsync();
     }
 }

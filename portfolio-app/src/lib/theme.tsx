@@ -1,132 +1,201 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react'
+import { createContext, useContext, useState, useMemo, useEffect, ReactNode } from 'react'
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import { ptBR } from '@mui/material/locale'
+import { designSystemApi } from '@/lib/api'
 
 type ThemeMode = 'light' | 'dark'
+
+export interface DesignSystemConfig {
+  primaryMain: string
+  primaryLight: string
+  primaryDark: string
+  secondaryMain: string
+  secondaryLight: string
+  secondaryDark: string
+  fontFamily: string
+  h1FontSize: number
+  h2FontSize: number
+  h3FontSize: number
+  h4FontSize: number
+  h5FontSize: number
+  h6FontSize: number
+  bodyFontSize: number
+  spacingUnit: number
+  borderRadius: number
+}
+
+const DEFAULT_CONFIG: DesignSystemConfig = {
+  primaryMain: '#009963',
+  primaryLight: '#33AD7F',
+  primaryDark: '#006B45',
+  secondaryMain: '#0066CC',
+  secondaryLight: '#3385D6',
+  secondaryDark: '#00478F',
+  fontFamily: 'Inter, Roboto, sans-serif',
+  h1FontSize: 96,
+  h2FontSize: 60,
+  h3FontSize: 48,
+  h4FontSize: 34,
+  h5FontSize: 24,
+  h6FontSize: 20,
+  bodyFontSize: 16,
+  spacingUnit: 8,
+  borderRadius: 8,
+}
 
 interface ThemeContextType {
   mode: ThemeMode
   toggleTheme: () => void
+  config: DesignSystemConfig
+  setConfig: (config: DesignSystemConfig) => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const ThemeContext = createContext<ThemeContextType>({
+  mode: 'light',
+  toggleTheme: () => { },
+  config: DEFAULT_CONFIG,
+  setConfig: () => { },
+})
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>('light')
+  const [config, setConfig] = useState<DesignSystemConfig>(DEFAULT_CONFIG)
 
-  // Load theme preference from localStorage on mount
+  // Handle hydration mismatch
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as ThemeMode
-    if (savedTheme === 'dark' || savedTheme === 'light') {
-      setMode(savedTheme)
+    setMounted(true)
+  }, [])
+
+  // Load theme mode from local storage or system preference
+  useEffect(() => {
+    const savedMode = localStorage.getItem('themeMode') as ThemeMode
+    if (savedMode) {
+      setMode(savedMode)
     } else {
-      // Check system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       setMode(prefersDark ? 'dark' : 'light')
     }
   }, [])
 
+  // Fetch design system config from backend
+  useEffect(() => {
+    // Only fetch if token exists to avoid 401 redirect loops
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const fetchConfig = async () => {
+      try {
+        const response = await designSystemApi.getConfig()
+        if (response.data) {
+          setConfig(response.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch design system config, using default', error)
+      }
+    }
+    fetchConfig()
+  }, [])
+
+
+
   const toggleTheme = () => {
-    setMode((prevMode) => {
-      const newMode = prevMode === 'light' ? 'dark' : 'light'
-      localStorage.setItem('theme', newMode)
-      return newMode
-    })
+    const newMode = mode === 'light' ? 'dark' : 'light'
+    setMode(newMode)
+    localStorage.setItem('themeMode', newMode)
   }
 
   const theme = useMemo(
     () =>
-      createTheme({
-        palette: {
-          mode,
-          primary: {
-            main: '#009963',
-            light: '#33AD7F',
-            dark: '#006B45',
-            contrastText: '#FFFFFF',
-          },
-          secondary: {
-            main: '#0066CC',
-            light: '#3385D6',
-            dark: '#00478F',
-            contrastText: '#FFFFFF',
-          },
-          ...(mode === 'dark'
-            ? {
-              background: {
-                default: '#121212',
-                paper: '#1E1E1E',
-              },
-              text: {
-                primary: '#FFFFFF',
-                secondary: '#B0B0B0',
-              },
-            }
-            : {
-              background: {
-                default: '#F8F9FA',
-                paper: '#FFFFFF',
-              },
-              text: {
-                primary: '#000000',
-                secondary: '#666666',
-              },
-            }),
-        },
-        typography: {
-          fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-          h1: { fontWeight: 700 },
-          h2: { fontWeight: 700 },
-          h3: { fontWeight: 600 },
-          h4: { fontWeight: 600 },
-          h5: { fontWeight: 600 },
-          h6: { fontWeight: 600 },
-        },
-        shape: {
-          borderRadius: 8,
-        },
-        components: {
-          MuiButton: {
-            styleOverrides: {
-              root: {
-                textTransform: 'none',
-                fontWeight: 500,
-              },
+      createTheme(
+        {
+          palette: {
+            mode,
+            primary: {
+              main: config.primaryMain,
+              light: config.primaryLight,
+              dark: config.primaryDark,
+              contrastText: '#ffffff',
+            },
+            secondary: {
+              main: config.secondaryMain,
+              light: config.secondaryLight,
+              dark: config.secondaryDark,
+              contrastText: '#ffffff',
+            },
+            background: {
+              default: mode === 'light' ? '#F8F9FA' : '#121212',
+              paper: mode === 'light' ? '#FFFFFF' : '#1E1E1E',
             },
           },
-          MuiCard: {
-            styleOverrides: {
-              root: {
-                boxShadow: mode === 'dark'
-                  ? '0 2px 8px rgba(0,0,0,0.5)'
-                  : '0 2px 8px rgba(0,0,0,0.1)',
+          typography: {
+            fontFamily: config.fontFamily,
+            h1: { fontSize: config.h1FontSize, fontWeight: 700 },
+            h2: { fontSize: config.h2FontSize, fontWeight: 700 },
+            h3: { fontSize: config.h3FontSize, fontWeight: 600 },
+            h4: { fontSize: config.h4FontSize, fontWeight: 600 },
+            h5: { fontSize: config.h5FontSize, fontWeight: 500 },
+            h6: { fontSize: config.h6FontSize, fontWeight: 500 },
+            body1: { fontSize: config.bodyFontSize },
+            button: { textTransform: 'none', fontWeight: 600 },
+          },
+          spacing: config.spacingUnit,
+          shape: {
+            borderRadius: config.borderRadius,
+          },
+          components: {
+            MuiPaper: {
+              styleOverrides: {
+                root: {
+                  backgroundImage: 'none',
+                },
               },
             },
-          },
-          MuiPaper: {
-            styleOverrides: {
-              root: {
-                backgroundImage: 'none',
+            MuiButton: {
+              styleOverrides: {
+                root: {
+                  borderRadius: config.borderRadius,
+                  padding: '8px 16px',
+                },
+                containedPrimary: {
+                  '&:hover': {
+                    backgroundColor: mode === 'light' ? config.primaryDark : config.primaryLight,
+                  },
+                },
+              },
+            },
+            MuiCard: {
+              styleOverrides: {
+                root: {
+                  borderRadius: config.borderRadius * 2,
+                  boxShadow: mode === 'light'
+                    ? '0px 2px 4px rgba(0,0,0,0.05), 0px 4px 6px rgba(0,0,0,0.05)'
+                    : '0px 2px 4px rgba(0,0,0,0.2), 0px 4px 6px rgba(0,0,0,0.2)',
+                },
               },
             },
           },
         },
-      }),
-    [mode]
+        ptBR
+      ),
+    [mode, config]
   )
 
+  if (!mounted) {
+    return null // Prevent hydration mismatch
+  }
+
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme }}>
-      <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
+    <ThemeContext.Provider value={{ mode, toggleTheme, config, setConfig }}>
+      <MuiThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
     </ThemeContext.Provider>
   )
 }
 
-export function useTheme() {
-  const context = useContext(ThemeContext)
-  if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider')
-  }
-  return context
-}
+export const useTheme = () => useContext(ThemeContext)

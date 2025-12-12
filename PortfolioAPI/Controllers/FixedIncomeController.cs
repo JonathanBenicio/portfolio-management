@@ -21,10 +21,17 @@ public class FixedIncomeController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<FixedIncomeAsset>>> GetAll()
+    public async Task<ActionResult<List<FixedIncomeAsset>>> GetAll([FromQuery] int? walletId)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        return await _context.FixedIncomeAssets.Where(a => a.UserId == userId).ToListAsync();
+        var query = _context.FixedIncomeAssets.Where(a => a.UserId == userId);
+        
+        if (walletId.HasValue)
+        {
+            query = query.Where(a => a.WalletId == walletId.Value);
+        }
+
+        return await query.ToListAsync();
     }
 
     [HttpGet("{id}")]
@@ -49,16 +56,19 @@ public class FixedIncomeController : ControllerBase
             Name = request.Name,
             Type = request.Type,
             InvestedValue = request.InvestedValue,
-            CurrentValue = request.InvestedValue, // Initial value
+            CurrentValue = request.InvestedValue,
             InterestRate = request.InterestRate,
             Index = request.Index,
             PurchaseDate = request.PurchaseDate,
             MaturityDate = request.MaturityDate,
-            UserId = userId
+            UserId = userId,
+            WalletId = request.WalletId
         };
 
         _context.FixedIncomeAssets.Add(asset);
         await _context.SaveChangesAsync();
+
+        await LogChange(userId, asset.Id, "Create", System.Text.Json.JsonSerializer.Serialize(asset));
 
         return CreatedAtAction(nameof(Get), new { id = asset.Id }, asset);
     }
@@ -79,8 +89,11 @@ public class FixedIncomeController : ControllerBase
         asset.Index = request.Index;
         asset.PurchaseDate = request.PurchaseDate;
         asset.MaturityDate = request.MaturityDate;
+        asset.WalletId = request.WalletId;
 
         await _context.SaveChangesAsync();
+
+        await LogChange(userId, asset.Id, "Update", System.Text.Json.JsonSerializer.Serialize(asset));
 
         return NoContent();
     }
@@ -97,6 +110,23 @@ public class FixedIncomeController : ControllerBase
         _context.FixedIncomeAssets.Remove(asset);
         await _context.SaveChangesAsync();
 
+        await LogChange(userId, id, "Delete", "{}");
+
         return NoContent();
+    }
+
+    private async Task LogChange(int userId, int entityId, string action, string changes)
+    {
+        var log = new AuditLog
+        {
+            UserId = userId,
+            EntityType = "FixedIncome",
+            EntityId = entityId,
+            Action = action,
+            Changes = changes,
+            Timestamp = DateTime.UtcNow
+        };
+        _context.AuditLogs.Add(log);
+        await _context.SaveChangesAsync();
     }
 }

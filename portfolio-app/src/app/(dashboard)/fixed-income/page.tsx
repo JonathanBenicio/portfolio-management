@@ -22,14 +22,19 @@ import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import CircularProgress from '@mui/material/CircularProgress'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
 import { fixedIncomeApi } from '@/lib/api'
 import { useSnackbar } from '@/lib/snackbar'
+import FixedIncomeForm from '@/components/FixedIncomeForm'
 
 export default function FixedIncomePage() {
   const [filter, setFilter] = useState('Todos')
   const [assets, setAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { showSuccess, showError } = useSnackbar()
+  const [openForm, setOpenForm] = useState(false)
+  const [selectedAsset, setSelectedAsset] = useState<any>(null)
 
   useEffect(() => {
     fetchAssets()
@@ -41,18 +46,13 @@ export default function FixedIncomePage() {
       setAssets(response.data)
     } catch (error) {
       showError('Erro ao carregar ativos de renda fixa')
-      // Mock data fallback
-      setAssets([
-        { id: 1, name: 'CDB Banco Inter', type: 'CDB', investedValue: 50000, currentValue: 52500, interestRate: 105, index: 'CDI', maturityDate: '2025-06-15' },
-        { id: 2, name: 'Tesouro Selic 2027', type: 'Tesouro', investedValue: 30000, currentValue: 31200, interestRate: 100, index: 'Selic', maturityDate: '2027-03-01' },
-        { id: 3, name: 'LCI Banco XP', type: 'LCI', investedValue: 20000, currentValue: 20800, interestRate: 95, index: 'CDI', maturityDate: '2025-12-31' },
-      ])
     } finally {
       setLoading(false)
     }
   }
 
   const handleDelete = async (id: number) => {
+    if (!confirm('Tem certeza que deseja remover este ativo?')) return
     try {
       await fixedIncomeApi.delete(id)
       showSuccess('Ativo removido com sucesso!')
@@ -60,6 +60,21 @@ export default function FixedIncomePage() {
     } catch (error) {
       showError('Erro ao remover ativo')
     }
+  }
+
+  const handleEdit = (asset: any) => {
+    setSelectedAsset(asset)
+    setOpenForm(true)
+  }
+
+  const handleAdd = () => {
+    setSelectedAsset(null)
+    setOpenForm(true)
+  }
+
+  const handleFormSuccess = () => {
+    setOpenForm(false)
+    fetchAssets()
   }
 
   const getTypeColor = (type: string) => {
@@ -92,7 +107,7 @@ export default function FixedIncomePage() {
           <Typography variant="h4" fontWeight="bold">
             Renda Fixa
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
             Adicionar Ativo
           </Button>
         </Box>
@@ -128,7 +143,7 @@ export default function FixedIncomePage() {
       <Grid item xs={12} md={3}>
         <Paper sx={{ p: 2 }}>
           <Typography color="text.secondary" variant="body2">Taxa Média</Typography>
-          <Typography variant="h5" fontWeight="bold">100% CDI</Typography>
+          <Typography variant="h5" fontWeight="bold">100% CDI</Typography> 
         </Paper>
       </Grid>
 
@@ -174,7 +189,7 @@ export default function FixedIncomePage() {
                     <TableCell align="right">{asset.interestRate}% {asset.index}</TableCell>
                     <TableCell align="center">{new Date(asset.maturityDate).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell align="center">
-                      <IconButton size="small" color="primary">
+                      <IconButton size="small" color="primary" onClick={() => handleEdit(asset)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton size="small" color="error" onClick={() => handleDelete(asset.id)}>
@@ -183,11 +198,26 @@ export default function FixedIncomePage() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {assets.length === 0 && (
+                     <TableRow>
+                        <TableCell colSpan={7} align="center">Nenhum ativo encontrado.</TableCell>
+                     </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
       </Grid>
+
+      <Dialog open={openForm} onClose={() => setOpenForm(false)} maxWidth="md" fullWidth>
+        <DialogContent>
+          <FixedIncomeForm 
+            onSuccess={handleFormSuccess} 
+            onCancel={() => setOpenForm(false)}
+            initialData={selectedAsset}
+          />
+        </DialogContent>
+      </Dialog>
     </Grid>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Grid from '@mui/material/Grid'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
@@ -21,21 +21,158 @@ import PaletteIcon from '@mui/icons-material/Palette'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
 import SpaceBarIcon from '@mui/icons-material/SpaceBar'
 import ViewModuleIcon from '@mui/icons-material/ViewModule'
+import SaveIcon from '@mui/icons-material/Save'
+import RestoreIcon from '@mui/icons-material/Restore'
+import EditIcon from '@mui/icons-material/Edit'
+import CloseIcon from '@mui/icons-material/Close'
+import { useTheme, DesignSystemConfig } from '@/lib/theme'
+import { designSystemApi } from '@/lib/api'
+import { useSnackbar } from '@/lib/snackbar'
 
 export default function DesignSystemPage() {
-  const theme = useMuiTheme()
-  const [borderRadius, setBorderRadius] = useState(8)
-  const [spacing, setSpacing] = useState(8)
+  const muiTheme = useMuiTheme()
+  const { config, setConfig } = useTheme()
+  const { showSuccess, showError } = useSnackbar()
+  const [editMode, setEditMode] = useState(false)
+  const [localConfig, setLocalConfig] = useState<DesignSystemConfig>(config)
+
+  // Update local config when global config changes (e.g. after fetch)
+  useEffect(() => {
+    if (!editMode) {
+      setLocalConfig(config)
+    }
+  }, [config, editMode])
+
+  const handleSave = async () => {
+    try {
+      const response = await designSystemApi.updateConfig(localConfig)
+      setConfig(response.data)
+      showSuccess('Configurações salvas com sucesso!')
+      setEditMode(false)
+    } catch (error) {
+      showError('Erro ao salvar configurações')
+    }
+  }
+
+  const handleReset = async () => {
+    try {
+      const response = await designSystemApi.resetToDefault()
+      setConfig(response.data)
+      setLocalConfig(response.data)
+      showSuccess('Resetado para configurações padrão')
+    } catch (error) {
+      showError('Erro ao resetar configurações')
+    }
+  }
+
+  const handleColorChange = (key: keyof DesignSystemConfig, value: string) => {
+    setLocalConfig(prev => ({ ...prev, [key]: value }))
+  }
+
+  const handleNumberChange = (key: keyof DesignSystemConfig, value: number) => {
+    setLocalConfig(prev => ({ ...prev, [key]: value }))
+  }
+
+  const renderColorInput = (label: string, configKey: keyof DesignSystemConfig, value: string) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          bgcolor: value,
+          borderRadius: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          cursor: editMode ? 'pointer' : 'default'
+        }}
+        onClick={() => {
+          if (editMode) {
+            const input = document.getElementById(`color-${configKey}`)
+            if (input) input.click()
+          }
+        }}
+      />
+      <Box sx={{ flexGrow: 1 }}>
+        <Typography variant="caption" fontWeight="bold" display="block">{label}</Typography>
+        {editMode ? (
+          <>
+            <TextField
+              size="small"
+              value={value}
+              onChange={(e) => handleColorChange(configKey, e.target.value)}
+              fullWidth
+              sx={{ mt: 0.5 }}
+            />
+            <input
+              type="color"
+              id={`color-${configKey}`}
+              value={value}
+              onChange={(e) => handleColorChange(configKey, e.target.value)}
+              style={{ display: 'none' }}
+            />
+          </>
+        ) : (
+          <Typography variant="body2" color="text.secondary">{value}</Typography>
+        )}
+      </Box>
+    </Box>
+  )
 
   return (
     <Grid container spacing={3}>
-      <Grid item xs={12}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Design System
-        </Typography>
-        <Typography color="text.secondary">
-          Configure e visualize o sistema de design da aplicação
-        </Typography>
+      <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Design System
+          </Typography>
+          <Typography color="text.secondary">
+            Configure e visualize o sistema de design da aplicação
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {editMode ? (
+            <>
+              <Button
+                variant="outlined"
+                color="inherit"
+                startIcon={<CloseIcon />}
+                onClick={() => {
+                  setLocalConfig(config)
+                  setEditMode(false)
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+              >
+                Salvar
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<RestoreIcon />}
+                onClick={handleReset}
+              >
+                Resetar Padrão
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<EditIcon />}
+                onClick={() => setEditMode(true)}
+              >
+                Editar
+              </Button>
+            </>
+          )}
+        </Box>
       </Grid>
 
       {/* Color Palette */}
@@ -48,149 +185,25 @@ export default function DesignSystemPage() {
             </Typography>
           </Box>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={4}>
             {/* Primary Colors */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+              <Typography variant="subtitle2" gutterBottom fontWeight="bold" sx={{ mb: 2 }}>
                 Primary (Verde)
               </Typography>
-              <Stack spacing={1}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 60, height: 60, bgcolor: 'primary.light', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">Light</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.palette.primary.light}</Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 60, height: 60, bgcolor: 'primary.main', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">Main</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.palette.primary.main}</Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 60, height: 60, bgcolor: 'primary.dark', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">Dark</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.palette.primary.dark}</Typography>
-                  </Box>
-                </Box>
-              </Stack>
+              {renderColorInput('Primary Light', 'primaryLight', localConfig.primaryLight)}
+              {renderColorInput('Primary Main', 'primaryMain', localConfig.primaryMain)}
+              {renderColorInput('Primary Dark', 'primaryDark', localConfig.primaryDark)}
             </Grid>
 
             {/* Secondary Colors */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+              <Typography variant="subtitle2" gutterBottom fontWeight="bold" sx={{ mb: 2 }}>
                 Secondary (Azul)
               </Typography>
-              <Stack spacing={1}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 60, height: 60, bgcolor: 'secondary.light', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">Light</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.palette.secondary.light}</Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 60, height: 60, bgcolor: 'secondary.main', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">Main</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.palette.secondary.main}</Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ width: 60, height: 60, bgcolor: 'secondary.dark', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">Dark</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.palette.secondary.dark}</Typography>
-                  </Box>
-                </Box>
-              </Stack>
-            </Grid>
-
-            {/* Semantic Colors */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold" sx={{ mt: 2 }}>
-                Cores Semânticas
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 40, height: 40, bgcolor: 'success.main', borderRadius: 1 }} />
-                    <Box>
-                      <Typography variant="caption" fontWeight="bold">Success</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        {theme.palette.success.main}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 40, height: 40, bgcolor: 'error.main', borderRadius: 1 }} />
-                    <Box>
-                      <Typography variant="caption" fontWeight="bold">Error</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        {theme.palette.error.main}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 40, height: 40, bgcolor: 'warning.main', borderRadius: 1 }} />
-                    <Box>
-                      <Typography variant="caption" fontWeight="bold">Warning</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        {theme.palette.warning.main}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 40, height: 40, bgcolor: 'info.main', borderRadius: 1 }} />
-                    <Box>
-                      <Typography variant="caption" fontWeight="bold">Info</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        {theme.palette.info.main}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Grid>
-
-            {/* Background Colors */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold" sx={{ mt: 2 }}>
-                Backgrounds
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 40, height: 40, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                    <Box>
-                      <Typography variant="caption" fontWeight="bold">Default</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        {theme.palette.background.default}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 40, height: 40, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }} />
-                    <Box>
-                      <Typography variant="caption" fontWeight="bold">Paper</Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        {theme.palette.background.paper}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
+              {renderColorInput('Secondary Light', 'secondaryLight', localConfig.secondaryLight)}
+              {renderColorInput('Secondary Main', 'secondaryMain', localConfig.secondaryMain)}
+              {renderColorInput('Secondary Dark', 'secondaryDark', localConfig.secondaryDark)}
             </Grid>
           </Grid>
         </Paper>
@@ -206,73 +219,97 @@ export default function DesignSystemPage() {
             </Typography>
           </Box>
 
-          <Stack spacing={2}>
-            <Box>
-              <Typography variant="h1">H1 - Heading 1</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.h1.fontSize} / {theme.typography.h1.fontWeight}
-              </Typography>
+          {editMode && (
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="subtitle2" gutterBottom>Font Family</Typography>
+              <TextField
+                fullWidth
+                value={localConfig.fontFamily}
+                onChange={(e) => handleColorChange('fontFamily', e.target.value)}
+                helperText="Ex: Inter, Roboto, sans-serif"
+              />
             </Box>
-            <Divider />
-            <Box>
-              <Typography variant="h2">H2 - Heading 2</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.h2.fontSize} / {theme.typography.h2.fontWeight}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="h3">H3 - Heading 3</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.h3.fontSize} / {theme.typography.h3.fontWeight}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="h4">H4 - Heading 4</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.h4.fontSize} / {theme.typography.h4.fontWeight}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="h5">H5 - Heading 5</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.h5.fontSize} / {theme.typography.h5.fontWeight}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="h6">H6 - Heading 6</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.h6.fontSize} / {theme.typography.h6.fontWeight}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="body1">Body 1 - Lorem ipsum dolor sit amet, consectetur adipiscing elit.</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.body1.fontSize}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="body2">Body 2 - Lorem ipsum dolor sit amet, consectetur adipiscing elit.</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {theme.typography.body2.fontSize}
-              </Typography>
-            </Box>
-            <Divider />
-            <Box>
-              <Typography variant="caption">Caption - Small text for captions and labels</Typography>
-            </Box>
-          </Stack>
+          )}
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="h1" sx={{ fontSize: localConfig.h1FontSize }}>H1 - Heading 1</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {localConfig.h1FontSize}px / 700
+                  </Typography>
+                </Box>
+                <Divider />
+                <Box>
+                  <Typography variant="h2" sx={{ fontSize: localConfig.h2FontSize }}>H2 - Heading 2</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {localConfig.h2FontSize}px / 700
+                  </Typography>
+                </Box>
+                <Divider />
+                <Box>
+                  <Typography variant="h3" sx={{ fontSize: localConfig.h3FontSize }}>H3 - Heading 3</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {localConfig.h3FontSize}px / 600
+                  </Typography>
+                </Box>
+                <Divider />
+                <Box>
+                  <Typography variant="body1" sx={{ fontSize: localConfig.bodyFontSize }}>
+                    Body 1 - Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {localConfig.bodyFontSize}px
+                  </Typography>
+                </Box>
+              </Stack>
+            </Grid>
+
+            {editMode && (
+              <Grid item xs={12} md={4}>
+                <Paper variant="outlined" sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom fontWeight="bold">Tamanhos (px)</Typography>
+                  <Stack spacing={2}>
+                    <TextField
+                      label="H1 Size"
+                      type="number"
+                      size="small"
+                      value={localConfig.h1FontSize}
+                      onChange={(e) => handleNumberChange('h1FontSize', Number(e.target.value))}
+                    />
+                    <TextField
+                      label="H2 Size"
+                      type="number"
+                      size="small"
+                      value={localConfig.h2FontSize}
+                      onChange={(e) => handleNumberChange('h2FontSize', Number(e.target.value))}
+                    />
+                    <TextField
+                      label="H3 Size"
+                      type="number"
+                      size="small"
+                      value={localConfig.h3FontSize}
+                      onChange={(e) => handleNumberChange('h3FontSize', Number(e.target.value))}
+                    />
+                    <TextField
+                      label="Body Size"
+                      type="number"
+                      size="small"
+                      value={localConfig.bodyFontSize}
+                      onChange={(e) => handleNumberChange('bodyFontSize', Number(e.target.value))}
+                    />
+                  </Stack>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
         </Paper>
       </Grid>
 
-      {/* Spacing */}
+      {/* Spacing & Shape */}
       <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: 3, height: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <SpaceBarIcon sx={{ mr: 1, color: 'primary.main' }} />
             <Typography variant="h6" fontWeight="bold">
@@ -281,25 +318,32 @@ export default function DesignSystemPage() {
           </Box>
 
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Base Unit: {spacing}px
+            Base Unit: {localConfig.spacingUnit}px
           </Typography>
+
           <Slider
-            value={spacing}
-            onChange={(_, value) => setSpacing(value as number)}
+            value={localConfig.spacingUnit}
+            onChange={(_, value) => handleNumberChange('spacingUnit', value as number)}
             min={4}
             max={16}
-            step={2}
+            step={1}
             marks
+            disabled={!editMode}
             valueLabelDisplay="auto"
             sx={{ mb: 3 }}
           />
 
           <Stack spacing={1}>
-            {[1, 2, 3, 4, 6, 8].map((multiplier) => (
+            {[1, 2, 4, 6].map((multiplier) => (
               <Box key={multiplier} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{ width: spacing * multiplier, height: 24, bgcolor: 'primary.main', borderRadius: 0.5 }} />
+                <Box sx={{
+                  width: localConfig.spacingUnit * multiplier,
+                  height: 24,
+                  bgcolor: 'primary.main',
+                  borderRadius: localConfig.borderRadius / 4
+                }} />
                 <Typography variant="body2">
-                  {multiplier} × {spacing}px = {spacing * multiplier}px
+                  {multiplier}x = {localConfig.spacingUnit * multiplier}px
                 </Typography>
               </Box>
             ))}
@@ -307,9 +351,8 @@ export default function DesignSystemPage() {
         </Paper>
       </Grid>
 
-      {/* Border Radius */}
       <Grid item xs={12} md={6}>
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: 3, height: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <ViewModuleIcon sx={{ mr: 1, color: 'primary.main' }} />
             <Typography variant="h6" fontWeight="bold">
@@ -318,35 +361,38 @@ export default function DesignSystemPage() {
           </Box>
 
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Valor atual: {borderRadius}px
+            Valor atual: {localConfig.borderRadius}px
           </Typography>
+
           <Slider
-            value={borderRadius}
-            onChange={(_, value) => setBorderRadius(value as number)}
+            value={localConfig.borderRadius}
+            onChange={(_, value) => handleNumberChange('borderRadius', value as number)}
             min={0}
             max={24}
             step={2}
             marks
+            disabled={!editMode}
             valueLabelDisplay="auto"
             sx={{ mb: 3 }}
           />
 
           <Grid container spacing={2}>
-            {[0, 4, 8, 12, 16, 24].map((radius) => (
-              <Grid item xs={4} key={radius}>
+            {[1, 2].map((item) => (
+              <Grid item xs={6} key={item}>
                 <Box
                   sx={{
                     width: '100%',
                     height: 80,
                     bgcolor: 'primary.main',
-                    borderRadius: `${radius}px`,
+                    borderRadius: `${localConfig.borderRadius}px`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white'
+                    color: 'white',
+                    boxShadow: 2
                   }}
                 >
-                  {radius}px
+                  Preview
                 </Box>
               </Grid>
             ))}
@@ -358,98 +404,36 @@ export default function DesignSystemPage() {
       <Grid item xs={12}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Componentes
+            Preview de Componentes
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Veja como suas alterações afetam os componentes reais.
           </Typography>
 
           <Grid container spacing={3}>
-            {/* Buttons */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
-                Buttons
-              </Typography>
-              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                <Button variant="contained">Contained</Button>
-                <Button variant="outlined">Outlined</Button>
-                <Button variant="text">Text</Button>
-                <Button variant="contained" disabled>Disabled</Button>
-              </Stack>
-            </Grid>
-
-            {/* Chips */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
-                Chips
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Chip label="Default" />
-                <Chip label="Primary" color="primary" />
-                <Chip label="Secondary" color="secondary" />
-                <Chip label="Success" color="success" />
-                <Chip label="Error" color="error" />
-              </Stack>
-            </Grid>
-
-            {/* Alerts */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
-                Alerts
-              </Typography>
               <Stack spacing={2}>
-                <Alert severity="success">Success alert - operation completed successfully!</Alert>
-                <Alert severity="info">Info alert - here's some information for you.</Alert>
-                <Alert severity="warning">Warning alert - please be careful!</Alert>
-                <Alert severity="error">Error alert - something went wrong.</Alert>
+                <Button variant="contained">Primary Button</Button>
+                <Button variant="outlined">Outlined Button</Button>
+                <TextField label="Input Field" fullWidth size="small" />
               </Stack>
             </Grid>
-
-            {/* Cards */}
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
-                Cards
-              </Typography>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Card Title
-                  </Typography>
+                  <Typography variant="h6" gutterBottom>Card Title</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    This is a sample card component with some content inside.
+                    Este card usa o border radius e as cores configuradas.
                   </Typography>
-                  <Button variant="contained" sx={{ mt: 2 }}>
-                    Action
-                  </Button>
+                  <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                    <Chip label="Chip 1" color="primary" />
+                    <Chip label="Chip 2" color="secondary" />
+                  </Stack>
                 </CardContent>
               </Card>
             </Grid>
-
-            {/* Form Controls */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom fontWeight="bold">
-                Form Controls
-              </Typography>
-              <Stack spacing={2}>
-                <TextField label="Text Field" variant="outlined" fullWidth />
-                <FormControlLabel control={<Switch defaultChecked />} label="Switch" />
-                <FormControlLabel control={<Switch />} label="Switch Off" />
-              </Stack>
-            </Grid>
           </Grid>
         </Paper>
-      </Grid>
-
-      {/* Theme Info */}
-      <Grid item xs={12}>
-        <Alert severity="info">
-          <Typography variant="body2">
-            <strong>Modo atual:</strong> {theme.palette.mode === 'dark' ? 'Escuro' : 'Claro'}
-          </Typography>
-          <Typography variant="body2">
-            <strong>Font Family:</strong> {theme.typography.fontFamily}
-          </Typography>
-          <Typography variant="body2">
-            <strong>Border Radius padrão:</strong> {theme.shape.borderRadius}px
-          </Typography>
-        </Alert>
       </Grid>
     </Grid>
   )
