@@ -1,0 +1,32 @@
+# Node / Next.js
+node_modules/
+portfolio-app/node_modules/
+.next/
+portfolio-app/.next/
+out/
+portfolio-app/out/
+
+# Local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+portfolio-app/.env.local
+portfolio-app/.env.development.local
+portfolio-app/.env.test.local
+portfolio-app/.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# Build / cache
+/build
+/dist
+.parcel-cache
+
+# Misc
+.DS_Store
+*.log

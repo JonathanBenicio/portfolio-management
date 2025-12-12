@@ -1,0 +1,31 @@
+## .NET / Visual Studio
+# Build directories
+bin/
+obj/
+PortfolioAPI/bin/
+PortfolioAPI/obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Test and coverage output
+TestResults/
+coverage*
+
+# NuGet packages
+*.nupkg
+
+# Publish directory
+publish/
+PortfolioAPI/publish/
+
+# Temporary
+*.tmp
+*.log
+
+# Rider
+.idea/

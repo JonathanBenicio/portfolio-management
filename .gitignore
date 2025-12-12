@@ -1,1 +1,73 @@
-*\.next
+# --- Global -----------------------------------------------------------------
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Editor directories and settings
+.vscode/
+.idea/
+.vs/
+
+# --- Node / Next.js (portfolio-app) -----------------------------------------
+# Ignore node_modules, Next.js build folder and local env files
+node_modules/
+portfolio-app/node_modules/
+.next/
+portfolio-app/.next/
+out/
+portfolio-app/out/
+/.parcel-cache
+
+# Local environment files (not for production)
+.env.local
+.env.*.local
+portfolio-app/.env.local
+portfolio-app/.env.*.local
+
+# Packaging
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# --- .NET (PortfolioAPI) ---------------------------------------------------
+# Build / binary output
+bin/
+obj/
+PortfolioAPI/bin/
+PortfolioAPI/obj/
+
+# User-specific files and caches
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.ncrunch*
+*.nuget.props
+
+# Visual Studio
+.vs/
+*.vssscc
+*.vsscc
+TestResults/
+
+# NuGet
+*.nupkg
+
+# Publish output
+publish/
+PortfolioAPI/publish/
+
+# --- Misc ------------------------------------------------------------------
+# IDE files and temp files
+*.swp
+*.bak
+*.tmp
+
+# Ignore lock / install files (optional, adjust if you track lock files)
+npm-debug.log*
+package-lock.json
