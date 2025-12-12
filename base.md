@@ -75,13 +75,11 @@ Uma plataforma clean e moderna para múltiplos usuários gerenciarem suas cartei
 ### Design
 - **Estilo**: Clean e moderno com fundo claro
 - **Cores**: Tons neutros com destaques em verde (ganhos) e vermelho (perdas)
-- **Gráficos**: Usando Recharts (já instalado)
+- **Gráficos**: Usando Recharts
 - **Responsivo**: Funciona bem em desktop e mobile
 
 ---
 
 ### Observações Técnicas
-- Layout completo com dados de exemplo (mock data)
-- Estrutura preparada para conexão futura com backend (Supabase)
 - Todas as telas funcionais para navegação
 - Integrações com corretoras e APIs de cotação poderão ser adicionadas posteriormente

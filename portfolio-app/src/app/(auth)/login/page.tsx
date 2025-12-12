@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Button from '@mui/material/Button'
 import Container from '@mui/material/Container'
@@ -11,9 +10,11 @@ import TextField from '@mui/material/TextField'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Alert from '@mui/material/Alert'
+import CircularProgress from '@mui/material/CircularProgress'
+import { useAuth } from '@/lib/auth'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,18 +26,10 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // API call would go here
-      // const res = await api.login({ email, password });
-
-      // Simulating login for now
-      console.log('Logging in with:', email, password)
-
-      // Store token (mock)
-      localStorage.setItem('token', 'mock-jwt-token')
-
-      router.push('/dashboard')
-    } catch (err) {
-      setError('Falha no login. Verifique suas credenciais.')
+      await login(email, password)
+      // Redirect is handled by auth context
+    } catch (err: any) {
+      setError(err.message || 'Falha no login. Verifique suas credenciais.')
     } finally {
       setLoading(false)
     }
@@ -52,11 +45,16 @@ export default function LoginPage() {
           justifyContent: 'center',
         }}
       >
-        <Card>
+        <Card elevation={4}>
           <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 4 }}>
-            <Typography variant="h4" component="h1" align="center" fontWeight="bold">
-              Login
-            </Typography>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Typography variant="h4" component="h1" fontWeight="bold" color="primary">
+                Portfolio
+              </Typography>
+              <Typography color="text.secondary">
+                Entre na sua conta
+              </Typography>
+            </Box>
 
             {error && <Alert severity="error">{error}</Alert>}
 
@@ -68,6 +66,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
               <TextField
                 label="Senha"
@@ -76,6 +75,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
 
               <Button
@@ -84,14 +84,15 @@ export default function LoginPage() {
                 size="large"
                 fullWidth
                 disabled={loading}
+                sx={{ py: 1.5 }}
               >
-                {loading ? 'Entrando...' : 'Entrar'}
+                {loading ? <CircularProgress size={24} color="inherit" /> : 'Entrar'}
               </Button>
             </form>
 
             <Typography align="center" variant="body2">
               Não tem uma conta?{' '}
-              <Link href="/register" style={{ color: 'inherit', fontWeight: 'bold' }}>
+              <Link href="/register" style={{ color: '#009963', fontWeight: 'bold', textDecoration: 'none' }}>
                 Cadastre-se
               </Link>
             </Typography>

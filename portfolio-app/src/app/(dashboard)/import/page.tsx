@@ -15,31 +15,86 @@ import TableRow from '@mui/material/TableRow'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import Alert from '@mui/material/Alert'
+import CircularProgress from '@mui/material/CircularProgress'
+import LinearProgress from '@mui/material/LinearProgress'
+import { importApi } from '@/lib/api'
+import { useSnackbar } from '@/lib/snackbar'
 
-const mockPreviewData = [
-  { ticker: 'PETR4', type: 'Ação', quantity: 100, price: 35.50, date: '2024-01-15' },
-  { ticker: 'VALE3', type: 'Ação', quantity: 50, price: 68.00, date: '2024-02-20' },
-  { ticker: 'MXRF11', type: 'FII', quantity: 200, price: 10.50, date: '2024-03-10' },
-]
+interface PreviewRow {
+  ticker: string
+  type: string
+  quantity: number
+  price: number
+  date: string
+}
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState(false)
+  const [previewData, setPreviewData] = useState<PreviewRow[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const { showSuccess, showError } = useSnackbar()
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
+      const selectedFile = e.target.files[0]
+      setFile(selectedFile)
+
+      // Parse CSV for preview
+      if (selectedFile.name.endsWith('.csv')) {
+        const text = await selectedFile.text()
+        const rows = text.split('\n').slice(1) // Skip header
+        const parsed = rows.slice(0, 10).map(row => {
+          const [ticker, type, quantity, price, date] = row.split(',')
+          return {
+            ticker: ticker?.trim(),
+            type: type?.trim(),
+            quantity: parseFloat(quantity),
+            price: parseFloat(price),
+            date: date?.trim()
+          }
+        }).filter(row => row.ticker)
+
+        setPreviewData(parsed)
+      }
     }
   }
 
   const handlePreview = () => {
-    setPreview(true)
+    if (previewData.length > 0) {
+      setPreview(true)
+    }
   }
 
-  const handleImport = () => {
-    alert('Dados importados com sucesso!')
-    setPreview(false)
-    setFile(null)
+  const handleImport = async () => {
+    if (!file) return
+
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90))
+      }, 200)
+
+      await importApi.uploadFile(formData)
+
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+
+      showSuccess(`${previewData.length} transações importadas com sucesso!`)
+      setPreview(false)
+      setFile(null)
+      setPreviewData([])
+      setUploadProgress(0)
+    } catch (error) {
+      showError('Erro ao importar arquivo')
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -60,7 +115,7 @@ export default function ImportPage() {
             Arraste seu arquivo ou clique para selecionar
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 3 }}>
-            Formatos aceitos: CSV, Excel (.xlsx)
+            Formatos aceitos: CSV, Excel (.xlsx) - Máximo 10MB
           </Typography>
 
           <input
@@ -69,9 +124,15 @@ export default function ImportPage() {
             id="file-upload"
             type="file"
             onChange={handleFileChange}
+            disabled={uploading}
           />
           <label htmlFor="file-upload">
-            <Button variant="contained" component="span" size="large">
+            <Button
+              variant="contained"
+              component="span"
+              size="large"
+              disabled={uploading}
+            >
               Selecionar Arquivo
             </Button>
           </label>
@@ -79,25 +140,37 @@ export default function ImportPage() {
           {file && (
             <Box sx={{ mt: 2 }}>
               <Alert icon={<CheckCircleIcon />} severity="success">
-                <strong>{file.name}</strong> selecionado
+                <strong>{file.name}</strong> ({(file.size / 1024).toFixed(2)} KB)
               </Alert>
-              <Button
-                variant="outlined"
-                sx={{ mt: 2 }}
-                onClick={handlePreview}
-              >
-                Visualizar Prévia
-              </Button>
+              {!preview && (
+                <Button
+                  variant="outlined"
+                  sx={{ mt: 2 }}
+                  onClick={handlePreview}
+                  disabled={uploading}
+                >
+                  Visualizar Prévia
+                </Button>
+              )}
+            </Box>
+          )}
+
+          {uploading && (
+            <Box sx={{ mt: 2 }}>
+              <LinearProgress variant="determinate" value={uploadProgress} />
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Enviando... {uploadProgress}%
+              </Typography>
             </Box>
           )}
         </Paper>
       </Grid>
 
-      {preview && (
+      {preview && previewData.length > 0 && (
         <>
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>
-              Prévia dos Dados
+              Prévia dos Dados ({previewData.length} primeiras linhas)
             </Typography>
             <Paper>
               <TableContainer>
@@ -112,13 +185,13 @@ export default function ImportPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {mockPreviewData.map((row, idx) => (
+                    {previewData.map((row, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{row.ticker}</TableCell>
                         <TableCell>{row.type}</TableCell>
                         <TableCell align="right">{row.quantity}</TableCell>
-                        <TableCell align="right">R$ {row.price.toFixed(2)}</TableCell>
-                        <TableCell>{new Date(row.date).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell align="right">R$ {row.price?.toFixed(2)}</TableCell>
+                        <TableCell>{row.date}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -129,11 +202,20 @@ export default function ImportPage() {
 
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button variant="outlined" onClick={() => setPreview(false)}>
+              <Button
+                variant="outlined"
+                onClick={() => setPreview(false)}
+                disabled={uploading}
+              >
                 Cancelar
               </Button>
-              <Button variant="contained" onClick={handleImport}>
-                Confirmar Importação
+              <Button
+                variant="contained"
+                onClick={handleImport}
+                disabled={uploading}
+                startIcon={uploading ? <CircularProgress size={20} /> : null}
+              >
+                {uploading ? 'Importando...' : 'Confirmar Importação'}
               </Button>
             </Box>
           </Grid>
@@ -143,19 +225,20 @@ export default function ImportPage() {
       <Grid item xs={12}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Instruções para Importação
+            Formato CSV Esperado
           </Typography>
           <Typography component="div">
-            <ol>
-              <li>Baixe o arquivo de transações da sua corretora</li>
-              <li>O arquivo deve conter as colunas: Ticker, Tipo, Quantidade, Preço, Data</li>
-              <li>Faça o upload do arquivo usando o botão acima</li>
-              <li>Verifique a prévia e confirme a importação</li>
-            </ol>
+            O arquivo CSV deve conter as seguintes colunas:
+            <Box component="pre" sx={{ bgcolor: 'action.hover', p: 2, mt: 2, borderRadius: 1, overflow: 'auto' }}>
+              {`ticker,type,quantity,price,date
+PETR4,Ação,100,35.50,2024-01-15
+VALE3,Ação,50,68.00,2024-02-20
+MXRF11,FII,200,10.50,2024-03-10`}
+            </Box>
           </Typography>
           <Alert severity="info" sx={{ mt: 2 }}>
-            <strong>Dica:</strong> Você pode baixar um modelo de arquivo CSV clicando{' '}
-            <a href="#" style={{ color: 'inherit', fontWeight: 'bold' }}>aqui</a>
+            <strong>Dica:</strong> Você pode baixar um modelo de arquivo CSV{' '}
+            <a href="/template.csv" download style={{ color: 'inherit', fontWeight: 'bold' }}>aqui</a>
           </Alert>
         </Paper>
       </Grid>

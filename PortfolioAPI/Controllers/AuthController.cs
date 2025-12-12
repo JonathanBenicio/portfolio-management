@@ -23,7 +23,16 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Registra um novo usuário na plataforma
+    /// </summary>
+    /// <param name="request">Dados do novo usuário</param>
+    /// <returns>Confirmação de registro</returns>
+    /// <response code="200">Usuário registrado com sucesso</response>
+    /// <response code="400">Email já existe</response>
     [HttpPost("register")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<User>> Register(RegisterDto request)
     {
         if (await _context.Users.AnyAsync(u => u.Email == request.Email))
@@ -47,7 +56,16 @@ public class AuthController : ControllerBase
         return Ok("User registered successfully.");
     }
 
+    /// <summary>
+    /// Realiza login e retorna token JWT
+    /// </summary>
+    /// <param name="request">Credenciais de login</param>
+    /// <returns>Token JWT e informações do usuário</returns>
+    /// <response code="200">Login realizado com sucesso</response>
+    /// <response code="400">Credenciais inválidas</response>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<LoginResponseDto>> Login(LoginDto request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);

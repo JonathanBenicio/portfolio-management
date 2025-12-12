@@ -14,5 +14,8 @@ RUN dotnet publish "PortfolioAPI.csproj" -c Release -o /app/publish /p:UseAppHos
 # Final stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Development
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "PortfolioAPI.dll"]

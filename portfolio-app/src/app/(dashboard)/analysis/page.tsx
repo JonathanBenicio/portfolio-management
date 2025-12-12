@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Grid from '@mui/material/Grid'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
@@ -8,17 +9,65 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
-import { useState } from 'react'
+import CircularProgress from '@mui/material/CircularProgress'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts'
+import { analysisApi } from '@/lib/api'
+import { useSnackbar } from '@/lib/snackbar'
 
-const MockChart = ({ title, height = 300 }: { title: string; height?: number }) => (
-  <Box sx={{ height, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1, border: '1px dashed #ccc' }}>
-    <Typography color="text.secondary">{title}</Typography>
-  </Box>
-)
+// Mock data
+const benchmarkData = [
+  { month: 'Jul', portfolio: 5, ibovespa: 3, cdi: 0.9, ipca: 0.3 },
+  { month: 'Ago', portfolio: 6, ibovespa: 4, cdi: 0.9, ipca: 0.4 },
+  { month: 'Set', portfolio: 8, ibovespa: 5, cdi: 0.95, ipca: 0.35 },
+  { month: 'Out', portfolio: 10, ibovespa: 6.5, cdi: 0.9, ipca: 0.4 },
+  { month: 'Nov', portfolio: 11, ibovespa: 7, cdi: 0.92, ipca: 0.38 },
+  { month: 'Dez', portfolio: 12.8, ibovespa: 8, cdi: 0.88, ipca: 0.42 },
+]
+
+const sectorData = [
+  { name: 'Tecnologia', value: 25, color: '#0066CC' },
+  { name: 'Financeiro', value: 20, color: '#009963' },
+  { name: 'Petróleo', value: 18, color: '#FF9800' },
+  { name: 'Varejo', value: 15, color: '#9C27B0' },
+  { name: 'Utilities', value: 12, color: '#F44336' },
+  { name: 'Outros', value: 10, color: '#607D8B' },
+]
+
+const performanceData = [
+  { ticker: 'PETR4', performance: 12.5 },
+  { ticker: 'VALE3', performance: 8.2 },
+  { ticker: 'ITSA4', performance: -3.1 },
+  { ticker: 'MXRF11', performance: 6.7 },
+  { ticker: 'BBDC4', performance: 4.5 },
+]
 
 export default function AnalysisPage() {
   const [period, setPeriod] = useState('6M')
   const [asset, setAsset] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const { showError } = useSnackbar()
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await analysisApi.getBenchmarks()
+        await analysisApi.getSectors()
+      } catch (error) {
+        showError('Erro ao carregar análises')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [showError])
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    )
+  }
 
   return (
     <Grid container spacing={3}>
@@ -57,33 +106,65 @@ export default function AnalysisPage() {
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>Comparação com Índices</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Sua carteira vs Ibovespa, CDI e IPCA
+            Sua carteira vs Ibovespa, CDI e IPCA (%)
           </Typography>
-          <MockChart title="Gráfico de Linha Comparativo (Recharts)" height={350} />
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={benchmarkData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis dataKey="month" stroke="#666" />
+              <YAxis stroke="#666" label={{ value: '%', position: 'insideLeft' }} />
+              <Tooltip formatter={(value: any) => `${value}%`} />
+              <Legend />
+              <Line type="monotone" dataKey="portfolio" stroke="#009963" strokeWidth={3} name="Minha Carteira" />
+              <Line type="monotone" dataKey="ibovespa" stroke="#0066CC" strokeWidth={2} name="Ibovespa" />
+              <Line type="monotone" dataKey="cdi" stroke="#FF9800" strokeWidth={2} name="CDI" />
+              <Line type="monotone" dataKey="ipca" stroke="#F44336" strokeWidth={2} name="IPCA" />
+            </LineChart>
+          </ResponsiveContainer>
         </Paper>
       </Grid>
 
       <Grid item xs={12} md={6}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>Alocação por Setor</Typography>
-          <MockChart title="Gráfico de Pizza - Setores (Recharts)" />
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={sectorData}
+                cx="50%"
+                cy="50%"
+                labelLine={true}
+                label={(entry) => `${entry.name}: ${entry.value}%`}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {sectorData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => `${value}%`} />
+            </PieChart>
+          </ResponsiveContainer>
         </Paper>
       </Grid>
 
       <Grid item xs={12} md={6}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>Performance Individual</Typography>
-          <MockChart title="Gráfico de Barras - Performance (Recharts)" />
-        </Paper>
-      </Grid>
-
-      <Grid item xs={12}>
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Projeção de Dividendos</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Baseado no histórico dos últimos 12 meses
-          </Typography>
-          <MockChart title="Gráfico de Linha - Projeção (Recharts)" height={250} />
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={performanceData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis dataKey="ticker" stroke="#666" />
+              <YAxis stroke="#666" label={{ value: '%', position: 'insideLeft' }} />
+              <Tooltip formatter={(value: any) => `${value}%`} />
+              <Bar dataKey="performance" fill="#009963">
+                {performanceData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.performance >= 0 ? '#4caf50' : '#f44336'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </Paper>
       </Grid>
 
