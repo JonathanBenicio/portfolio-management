@@ -2,6 +2,7 @@
 
 import { createTheme } from '@mui/material/styles'
 import { Roboto } from 'next/font/google'
+import { useState } from 'react'
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -57,3 +58,45 @@ const theme = createTheme({
 })
 
 export default theme
+
+export interface DesignSystemConfig {
+    primaryLight: string;
+    primaryMain: string;
+    primaryDark: string;
+    secondaryLight: string;
+    secondaryMain: string;
+    secondaryDark: string;
+    fontFamily: string;
+    h1FontSize: number;
+    h2FontSize: number;
+    h3FontSize: number;
+    bodyFontSize: number;
+    spacingUnit: number;
+    borderRadius: number;
+}
+
+export const useTheme = () => {
+    const [config, setConfig] = useState<DesignSystemConfig>({
+        primaryLight: '#4caf50',
+        primaryMain: '#2e7d32',
+        primaryDark: '#1b5e20',
+        secondaryLight: '#42a5f5',
+        secondaryMain: '#1976d2',
+        secondaryDark: '#1565c0',
+        fontFamily: 'Roboto, sans-serif',
+        h1FontSize: 32,
+        h2FontSize: 24,
+        h3FontSize: 20,
+        bodyFontSize: 16,
+        spacingUnit: 8,
+        borderRadius: 4
+    });
+
+    const [mode, setMode] = useState<'light' | 'dark'>('light');
+
+    const toggleTheme = () => {
+        setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+    };
+
+    return { config, setConfig, mode, toggleTheme };
+}
