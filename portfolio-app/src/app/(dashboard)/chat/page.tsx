@@ -9,10 +9,17 @@ import IconButton from '@mui/material/IconButton'
 import SendIcon from '@mui/icons-material/Send'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
 import PersonIcon from '@mui/icons-material/Person'
+import SettingsIcon from '@mui/icons-material/Settings'
+import TuneIcon from '@mui/icons-material/Tune'
 import Avatar from '@mui/material/Avatar'
 import Stack from '@mui/material/Stack'
 import CircularProgress from '@mui/material/CircularProgress'
+import Alert from '@mui/material/Alert'
+import Tooltip from '@mui/material/Tooltip'
 import { chatApi } from '@/lib/api'
+import { aiService, AIMessage } from '@/lib/aiService'
+import ApiKeyDialog from '@/components/ApiKeyDialog'
+import ChatPreferencesDialog from '@/components/ChatPreferencesDialog'
 
 interface Message {
   id: number
@@ -27,6 +34,12 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [conversationId, setConversationId] = useState<number | null>(null)
+  const [apiKeyConfigured, setApiKeyConfigured] = useState<boolean | null>(null)
+
+  // Dialog States
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
+  const [showPreferencesDialog, setShowPreferencesDialog] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -37,8 +50,24 @@ export default function ChatPage() {
     scrollToBottom()
   }, [messages])
 
+  useEffect(() => {
+    // Check if API key is configured on mount
+    checkApiKey()
+  }, [])
+
+  const checkApiKey = async () => {
+    const configured = await aiService.initialize()
+    setApiKeyConfigured(configured)
+  }
+
   const handleSend = async () => {
     if (!input.trim() || loading) return
+
+    // Check if API key is configured
+    if (apiKeyConfigured === false) {
+      setShowApiKeyDialog(true)
+      return
+    }
 
     const userMessage: Message = { id: Date.now(), text: input, sender: 'user' }
     setMessages(prev => [...prev, userMessage])
@@ -46,22 +75,57 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      const response = await chatApi.sendMessage({
-        message: input,
-        conversationId: conversationId || undefined
-      })
+      // Build conversation history for AI
+      const aiMessages: AIMessage[] = [
+        {
+          role: 'system',
+          content: 'Você é um assistente especializado em investimentos e finanças pessoais. Ajude o usuário com análises de carteira, sugestões de investimentos e educação financeira. Seja claro, objetivo e sempre baseie suas respostas em boas práticas financeiras.'
+        },
+        ...messages.slice(-5).map(m => ({
+          role: m.sender === 'user' ? 'user' as const : 'assistant' as const,
+          content: m.text
+        })),
+        {
+          role: 'user',
+          content: input
+        }
+      ]
 
-      const { aiMessage, conversationId: newConversationId } = response.data
+      // Call AI service
+      const aiResponse = await aiService.sendMessage(aiMessages)
 
-      if (!conversationId) {
-        setConversationId(newConversationId)
+      if (aiResponse.error) {
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          text: aiResponse.error,
+          sender: 'ai'
+        }])
+
+        if (aiResponse.error.includes('configure sua API key')) {
+          setApiKeyConfigured(false)
+          setShowApiKeyDialog(true)
+        }
+      } else {
+        // Save to backend for history
+        try {
+          const response = await chatApi.sendMessage({
+            message: input,
+            conversationId: conversationId || undefined
+          })
+
+          if (!conversationId) {
+            setConversationId(response.data.conversationId)
+          }
+        } catch (error) {
+          console.error('Error saving to backend:', error)
+        }
+
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          text: aiResponse.message,
+          sender: 'ai'
+        }])
       }
-
-      setMessages(prev => [...prev, {
-        id: aiMessage.id,
-        text: aiMessage.content,
-        sender: 'ai'
-      }])
     } catch (error) {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
@@ -73,11 +137,39 @@ export default function ChatPage() {
     }
   }
 
+  const handleApiKeySaved = () => {
+    checkApiKey()
+  }
+
   return (
     <Box sx={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Assistente IA
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5" fontWeight="bold">
+          Assistente IA
+        </Typography>
+        <Box>
+          <Tooltip title="Preferências do Chat">
+            <IconButton onClick={() => setShowPreferencesDialog(true)} color="default" sx={{ mr: 1 }}>
+              <TuneIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Configurar API Key">
+            <IconButton onClick={() => setShowApiKeyDialog(true)} color="primary">
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {apiKeyConfigured === false && (
+        <Alert severity="warning" sx={{ mb: 2 }} action={
+          <IconButton color="inherit" size="small" onClick={() => setShowApiKeyDialog(true)}>
+            <SettingsIcon fontSize="small" />
+          </IconButton>
+        }>
+          Configure sua API key para usar o assistente de IA
+        </Alert>
+      )}
 
       <Paper sx={{ flexGrow: 1, mb: 2, p: 2, overflowY: 'auto', bgcolor: 'background.default' }}>
         <Stack spacing={2}>
@@ -164,6 +256,17 @@ export default function ChatPage() {
           <SendIcon />
         </IconButton>
       </Box>
+
+      <ApiKeyDialog
+        open={showApiKeyDialog}
+        onClose={() => setShowApiKeyDialog(false)}
+        onSaved={handleApiKeySaved}
+      />
+
+      <ChatPreferencesDialog
+        open={showPreferencesDialog}
+        onClose={() => setShowPreferencesDialog(false)}
+      />
     </Box>
   )
 }

@@ -36,6 +36,7 @@ export default function FixedIncomeForm({ onSuccess, onCancel, initialWalletId, 
     index: initialData?.index || 'CDI',
     purchaseDate: initialData?.purchaseDate ? new Date(initialData.purchaseDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     maturityDate: initialData?.maturityDate ? new Date(initialData.maturityDate).toISOString().split('T')[0] : '',
+    liquidity: initialData?.liquidity || 'Vencimento',
     walletId: initialData?.walletId || initialWalletId || '',
   })
 
@@ -174,6 +175,20 @@ export default function FixedIncomeForm({ onSuccess, onCancel, initialWalletId, 
             onChange={(e) => setFormData({ ...formData, maturityDate: e.target.value })}
             required
           />
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth required>
+            <InputLabel>Liquidez</InputLabel>
+            <Select
+              value={formData.liquidity}
+              label="Liquidez"
+              onChange={(e) => setFormData({ ...formData, liquidity: e.target.value })}
+            >
+              <MenuItem value="Diário">Diário</MenuItem>
+              <MenuItem value="Vencimento">Vencimento</MenuItem>
+            </Select>
+          </FormControl>
         </Grid>
 
         <Grid item xs={12}>

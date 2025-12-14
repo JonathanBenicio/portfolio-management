@@ -96,6 +96,14 @@ export const chatApi = {
     api.post('/chat/message', data),
 }
 
+// API Key endpoints
+export const apiKeyApi = {
+  getAll: () => api.get('/apikey'),
+  save: (data: { provider: string; apiKey: string }) => api.post('/apikey', data),
+  delete: (id: number) => api.delete(`/apikey/${id}`),
+  getActive: (provider: string) => api.get(`/apikey/active/${provider}`),
+}
+
 // Import API
 export const importApi = {
   uploadFile: (formData: FormData) =>
@@ -114,13 +122,13 @@ export const designSystemApi = {
 
 // Wallet endpoints
 export interface AuditLog {
-    id: number
-    userId: number
-    entityType: string
-    entityId: number
-    action: string
-    changes: string
-    timestamp: string
+  id: number
+  userId: number
+  entityType: string
+  entityId: number
+  action: string
+  changes: string
+  timestamp: string
 }
 
 export const walletApi = {
@@ -143,25 +151,25 @@ export interface Wallet {
 }
 
 export interface AssetSummary {
-    id: number
-    name: string
-    type: string
-    invested: number
-    current: number
-    profit: number
+  id: number
+  name: string
+  type: string
+  invested: number
+  current: number
+  profit: number
 }
 
 export interface WalletAnalytics {
-    totalInvested: number
-    totalCurrent: number
-    totalProfit: number
-    monthlyReturnPercentage: number
-    assets: AssetSummary[]
+  totalInvested: number
+  totalCurrent: number
+  totalProfit: number
+  monthlyReturnPercentage: number
+  assets: AssetSummary[]
 }
 
 export interface WalletEvolution {
-    date: string
-    totalValue: number
+  date: string
+  totalValue: number
 }
 
 export default api

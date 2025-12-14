@@ -20,6 +20,8 @@ public class CreateFixedIncomeDto
     public DateTime PurchaseDate { get; set; }
     
     public DateTime MaturityDate { get; set; }
+    
+    public string Liquidity { get; set; } = "Vencimento";
 
     public int? WalletId { get; set; }
 }

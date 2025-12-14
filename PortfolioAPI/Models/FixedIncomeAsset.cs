@@ -25,6 +25,8 @@ public class FixedIncomeAsset
     
     public DateTime MaturityDate { get; set; }
     
+    public string Liquidity { get; set; } = "Vencimento"; // Diário, Vencimento
+    
     public int UserId { get; set; }
     public User? User { get; set; }
 

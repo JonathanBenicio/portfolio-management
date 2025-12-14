@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PortfolioAPI.Data;
+using PortfolioAPI.Services;
+using PortfolioAPI.Extensions;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add DbContext
 builder.Services.AddDbContext<PortfolioDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add Encryption Service
+builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 
 // Add Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_key_123456789_at_least_32_bytes_long";
@@ -92,12 +97,8 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Auto-create database tables on startup
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<PortfolioDbContext>();
-    context.Database.Migrate();
-}
+// Auto-create database tables on startup with retry logic
+app.ApplyMigrations();
 
 // Configure the HTTP request pipeline.
 // Enable Swagger in all environments (for Docker)

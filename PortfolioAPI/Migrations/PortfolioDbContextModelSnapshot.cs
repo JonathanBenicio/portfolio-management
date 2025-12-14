@@ -245,6 +245,10 @@ namespace PortfolioAPI.Migrations
                     b.Property<decimal>("InvestedValue")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Liquidity")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("MaturityDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -331,6 +335,41 @@ namespace PortfolioAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("PortfolioAPI.Models.UserApiKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedApiKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserApiKeys");
                 });
 
             modelBuilder.Entity("PortfolioAPI.Models.VariableIncomeAsset", b =>
@@ -477,6 +516,17 @@ namespace PortfolioAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("VariableIncomeAsset");
+                });
+
+            modelBuilder.Entity("PortfolioAPI.Models.UserApiKey", b =>
+                {
+                    b.HasOne("PortfolioAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PortfolioAPI.Models.VariableIncomeAsset", b =>

@@ -17,6 +17,7 @@ public class PortfolioDbContext : DbContext
     public DbSet<DesignSystemConfig> DesignSystemConfigs { get; set; }
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<UserApiKey> UserApiKeys { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
