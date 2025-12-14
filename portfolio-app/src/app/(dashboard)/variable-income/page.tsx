@@ -147,7 +147,7 @@ export default function VariableIncomePage() {
                       <TableCell align="right">{stock.quantity}</TableCell>
                       <TableCell align="right">R$ {stock.averagePrice.toFixed(2)}</TableCell>
                       <TableCell align="right">R$ {currentPrice.toFixed(2)}</TableCell>
-                      <TableCell align="right" fontWeight="bold">
+                      <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                         R$ {(stock.quantity * currentPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell

@@ -71,3 +71,4 @@ PortfolioAPI/publish/
 # Ignore lock / install files (optional, adjust if you track lock files)
 npm-debug.log*
 package-lock.json
+.env

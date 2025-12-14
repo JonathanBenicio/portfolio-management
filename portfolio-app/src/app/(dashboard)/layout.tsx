@@ -33,7 +33,7 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
-import { useTheme } from '@/lib/theme.tsx'
+import { useTheme } from '@/lib/theme'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 const drawerWidth = 240
